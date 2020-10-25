@@ -147,9 +147,7 @@ public class DefaultStatementExecutor {
 			child.setTable(currentConstraint.getTableB());
 
 			// recurse
-			boolean sc = extendResult(child);
-
-			if (sc) {
+			if (extendResult(child)) {
 				// extend the result set
 				resultRecord.getRecords().add(child);
 			}

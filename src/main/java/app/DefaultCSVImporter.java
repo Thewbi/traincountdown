@@ -35,7 +35,7 @@ public class DefaultCSVImporter {
 		Iterable<CSVRecord> iterable = CSVFormat.DEFAULT.withQuote(null).withEscape('\'').withQuoteMode(QuoteMode.NONE)
 				.withFirstRecordAsHeader().parse(targetReader);
 
-		// use set because List.removeAll() is so slow that it even returns in a
+		// use set because List.removeAll() is so slow that it does not even returns in a
 		// reasonable amount of time for large data sets.
 		// As the stop times are a large data set a list cannot be used. Use set instead
 		// which has a pretty fast removeAll()

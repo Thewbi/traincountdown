@@ -25,32 +25,32 @@ import net.sf.jsqlparser.statement.select.ValuesList;
 import net.sf.jsqlparser.statement.select.WithItem;
 
 public class DefaultTableVisitor extends StatementVisitorAdapter implements FromItemVisitor, SelectVisitor {
-	
+
 	@SuppressWarnings("unused")
 	private static final Logger LOG = LogManager.getLogger(DefaultTableVisitor.class);
-	
+
 	private final Map<String, Table> tables = new HashMap<>();
-	
+
 	@Override
-    public void visit(PlainSelect plainSelect) {
-        if (plainSelect.getFromItem() != null) {
-            plainSelect.getFromItem().accept(this);
-        }
-        
-        if (CollectionUtils.isNotEmpty(plainSelect.getJoins())) {
-	        for (Join join : plainSelect.getJoins()) {
-	        	
-	        	Table table = (Table) join.getRightItem();
-	        	
-	        	tables.put(table.getName(), table);
-	        }
-        }
+	public void visit(PlainSelect plainSelect) {
+		if (plainSelect.getFromItem() != null) {
+			plainSelect.getFromItem().accept(this);
+		}
+
+		if (CollectionUtils.isNotEmpty(plainSelect.getJoins())) {
+			for (Join join : plainSelect.getJoins()) {
+
+				Table table = (Table) join.getRightItem();
+
+				tables.put(table.getName(), table);
+			}
+		}
 	}
-	
+
 	@Override
-    public void visit(Select select) {
-        select.getSelectBody().accept(this);
-    }
+	public void visit(Select select) {
+		select.getSelectBody().accept(this);
+	}
 
 	@Override
 	public void visit(Table table) {
@@ -102,7 +102,7 @@ public class DefaultTableVisitor extends StatementVisitorAdapter implements From
 	}
 
 	public Optional<Table> resolveTable(Table table) {
-		
+
 		if (tables.values().contains(table)) {
 			return Optional.of(table);
 		}
