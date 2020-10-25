@@ -22,52 +22,69 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 public class MainCountdown {
 
+	/**
+	 * This is the amount in milliseconds that it takes the alarm sample to finish
+	 */
+	private static final int LENGTH_OF_AUDIO_COUNTDOWN = 1000 * 11;
+
+	/**
+	 * sound the alarm an amount of minutes before the train leaves so people have
+	 * time to actually get to the station to get on the train in time
+	 */
+	private static final int ALARM_OFFSET = 1000 * 60 * 3;
+
 	public static void main(String[] args) throws LineUnavailableException, IOException, UnsupportedAudioFileException {
 
 //		List<String> times = retrieveSunday();
 		List<String> times = retrieveMonday();
-		
+
 		List<LocalTime> localTimes = times.stream().map(s -> {
 			return LocalTime.parse(s);
-		}).collect(Collectors.toList()); 
-		
+		}).collect(Collectors.toList());
+
 		while (true) {
-			
+
 			LocalTime treshold = findNextTreshold(localTimes);
-			
+
 			System.out.println(treshold);
-	        
-	        boolean soundPlayed = false;
-			
-			while (LocalTime.now().isBefore(treshold) ) {
+
+			boolean soundPlayed = false;
+
+			while (LocalTime.now().isBefore(treshold)) {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				
+
 				long millis = Duration.between(LocalTime.now(), treshold).toMillis();
-				
-				String output = String.format("%d minutes %d seconds", 
-						  TimeUnit.MILLISECONDS.toMinutes(millis),
-						  TimeUnit.MILLISECONDS.toSeconds(millis) - 
-						  TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)));
-				
-				System.out.println(output + " left to next trip at " + treshold);
-				
-				if ((millis <= 11000) && !soundPlayed) {
+
+				String timeLeft = formatMillisecondsToHumanReadable(millis);
+
+				System.out.println(timeLeft + " left to next trip at " + treshold + ". Alarm offset is " + formatMillisecondsToHumanReadable(ALARM_OFFSET));
+
+				if ((millis <= (LENGTH_OF_AUDIO_COUNTDOWN + ALARM_OFFSET)) && !soundPlayed) {
 					soundPlayed = true;
-					
-					Thread thread = new Thread(() -> { play("/Users/bischowg/dev/java/traincountdown/104318211.mp3"); });
+
+					Thread thread = new Thread(() -> {
+						play("/Users/bischowg/dev/java/traincountdown/104318211.mp3");
+					});
 					thread.start();
-					
+
 				}
 			}
-		}	
+		}
+	}
+
+	private static String formatMillisecondsToHumanReadable(long millis) {
+		String output = String.format("%d minutes %d seconds", TimeUnit.MILLISECONDS.toMinutes(millis),
+				TimeUnit.MILLISECONDS.toSeconds(millis)
+						- TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)));
+		return output;
 	}
 
 	private static List<String> retrieveMonday() {
-		
+
 		List<String> times = new ArrayList<>();
 		times.add("04:49:00");
 		times.add("05:04:00");
@@ -177,7 +194,7 @@ public class MainCountdown {
 //		times.add("24:04:00");
 //		times.add("24:19:00");
 //		times.add("24:34:00");
-		
+
 		return times;
 	}
 
@@ -281,56 +298,52 @@ public class MainCountdown {
 		LocalTime now = LocalTime.now();
 		LocalTime treshold = null;
 		for (LocalTime localTime : localTimes) {
-			
+
 			if (now.isBefore(localTime)) {
 				treshold = localTime;
 				break;
 			}
-			
+
 		}
 		return treshold;
 	}
-	
-	public static void play(String filePath) {
-        final File file = new File(filePath);
- 
-        try (final AudioInputStream in = getAudioInputStream(file)) {
-             
-            final AudioFormat outFormat = getOutFormat(in.getFormat());
-            final Info info = new Info(SourceDataLine.class);
- 
-            try (final SourceDataLine line =
-                     (SourceDataLine) AudioSystem.getLine(info)) {
- 
-                if (line != null) {
-                    line.open(outFormat);
-                    line.start();
-                    stream(getAudioInputStream(outFormat, in), line);
-                    line.drain();
-                    line.stop();
-                }
-            }
- 
-        } catch (UnsupportedAudioFileException 
-               | LineUnavailableException 
-               | IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
- 
-    private static AudioFormat getOutFormat(AudioFormat inFormat) {
-        final int ch = inFormat.getChannels();
 
-        final float rate = inFormat.getSampleRate();
-        return new AudioFormat(PCM_SIGNED, rate, 16, ch, ch * 2, rate, false);
-    }
- 
-    private static void stream(AudioInputStream in, SourceDataLine line) 
-        throws IOException {
-        final byte[] buffer = new byte[4096];
-        for (int n = 0; n != -1; n = in.read(buffer, 0, buffer.length)) {
-            line.write(buffer, 0, n);
-        }
-    }
+	public static void play(String filePath) {
+		final File file = new File(filePath);
+
+		try (final AudioInputStream in = getAudioInputStream(file)) {
+
+			final AudioFormat outFormat = getOutFormat(in.getFormat());
+			final Info info = new Info(SourceDataLine.class);
+
+			try (final SourceDataLine line = (SourceDataLine) AudioSystem.getLine(info)) {
+
+				if (line != null) {
+					line.open(outFormat);
+					line.start();
+					stream(getAudioInputStream(outFormat, in), line);
+					line.drain();
+					line.stop();
+				}
+			}
+
+		} catch (UnsupportedAudioFileException | LineUnavailableException | IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private static AudioFormat getOutFormat(AudioFormat inFormat) {
+		final int ch = inFormat.getChannels();
+
+		final float rate = inFormat.getSampleRate();
+		return new AudioFormat(PCM_SIGNED, rate, 16, ch, ch * 2, rate, false);
+	}
+
+	private static void stream(AudioInputStream in, SourceDataLine line) throws IOException {
+		final byte[] buffer = new byte[4096];
+		for (int n = 0; n != -1; n = in.read(buffer, 0, buffer.length)) {
+			line.write(buffer, 0, n);
+		}
+	}
 
 }
